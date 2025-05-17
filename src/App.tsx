@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import LiquidityPage from "./pages/LiquidityPage";
 import LpPricePage from "./pages/LpPricePage";
 import NotFound from "./pages/NotFound";
+import { LpInfoProvider } from "./contexts/LpInfoContext";
 
 const queryClient = new QueryClient();
 
@@ -18,18 +19,20 @@ function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/liquidity" element={<LiquidityPage />} />
-              <Route path="/lp-prices" element={<LpPricePage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <LpInfoProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/liquidity" element={<LiquidityPage />} />
+                <Route path="/lp-prices" element={<LpPricePage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </LpInfoProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

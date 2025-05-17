@@ -5,6 +5,7 @@ import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
 import { useWallet } from "@/hooks/useWallet";
 import { formatEther } from "viem";
 import { CONFLUX_TOKENS } from "@/constants/tokens";
+import { useLpInfo } from "@/contexts/LpInfoContext";
 
 const LP_ADDRESSES = [
   "0xc9931ef4a3e615c68f2cc500421933c42e289bf2",
@@ -19,6 +20,8 @@ interface LpInfo {
   token1: string;
   reserve0: string;
   reserve1: string;
+  lastPrice?: string;
+  priceChange?: number;
 }
 
 const getTokenName = (address: string): string => {
@@ -35,10 +38,19 @@ const getTokenSymbol = (address: string): string => {
   return token ? token.symbol : "???";
 };
 
+const calculatePriceChange = (
+  currentPrice: string,
+  lastPrice: string
+): number => {
+  const current = parseFloat(currentPrice);
+  const last = parseFloat(lastPrice);
+  return current - last;
+};
+
 export function LpPriceCard() {
   const { wallet } = useWallet();
   const publicClient = usePublicClient();
-  const [lpInfos, setLpInfos] = useState<{ [key: string]: LpInfo }>({});
+  const { lpInfos, updateLpInfo } = useLpInfo();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +58,6 @@ export function LpPriceCard() {
       if (!wallet.chainId || !ROUTER_ADDRESSES[wallet.chainId]) return;
 
       const routerAddress = ROUTER_ADDRESSES[wallet.chainId];
-      const newLpInfos: { [key: string]: LpInfo } = {};
 
       try {
         for (const lpAddress of LP_ADDRESSES) {
@@ -74,15 +85,24 @@ export function LpPriceCard() {
             args: [lpAddress as `0x${string}`],
           })) as [[bigint, bigint], [bigint, bigint], bigint];
 
-          newLpInfos[lpAddress] = {
-            price: formatEther(price as bigint),
-            token0: pairTokens[0],
-            token1: pairTokens[1],
-            reserve0: formatEther(reserves[0][0]),
-            reserve1: formatEther(reserves[0][1]),
-          };
+          const currentPrice = formatEther(price as bigint);
+          const lastPrice = lpInfos[lpAddress]?.price;
+          const priceChange = lastPrice
+            ? calculatePriceChange(currentPrice, lastPrice)
+            : 0;
+
+          if (!lastPrice || currentPrice !== lastPrice) {
+            updateLpInfo(lpAddress, {
+              price: currentPrice,
+              token0: pairTokens[0],
+              token1: pairTokens[1],
+              reserve0: formatEther(reserves[0][0]),
+              reserve1: formatEther(reserves[0][1]),
+              lastPrice: lastPrice,
+              priceChange,
+            });
+          }
         }
-        setLpInfos(newLpInfos);
       } catch (error) {
         console.error("Error fetching LP info:", error);
       } finally {
@@ -94,7 +114,7 @@ export function LpPriceCard() {
     const interval = setInterval(fetchLpInfo, 10000); // Refresh every 10 seconds
 
     return () => clearInterval(interval);
-  }, [wallet.chainId, publicClient]);
+  }, [wallet.chainId, publicClient, lpInfos, updateLpInfo]);
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -112,6 +132,15 @@ export function LpPriceCard() {
                 const info = lpInfos[address];
                 const token0Symbol = getTokenSymbol(info?.token0 || "");
                 const token1Symbol = getTokenSymbol(info?.token1 || "");
+                const priceChange = info?.priceChange || 0;
+                const priceChangeColor =
+                  priceChange > 0
+                    ? "text-green-500"
+                    : priceChange < 0
+                    ? "text-red-500"
+                    : "text-gray-500";
+                const priceChangePrefix = priceChange > 0 ? "+" : "";
+
                 return (
                   <div
                     key={address}
@@ -121,13 +150,22 @@ export function LpPriceCard() {
                       <span className="text-sm text-muted-foreground">
                         LP: {address.slice(0, 6)}...{address.slice(-4)}
                       </span>
-                      <span className="font-semibold">
-                        {info?.price
-                          ? `${parseFloat(info.price).toFixed(
-                              4
-                            )} ${token1Symbol}/${token0Symbol}`
-                          : "N/A"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                          {info?.price
+                            ? `${parseFloat(info.price).toFixed(
+                                4
+                              )} ${token1Symbol}/${token0Symbol}`
+                            : "N/A"}
+                        </span>
+                        {info?.priceChange !== undefined &&
+                          priceChange !== 0 && (
+                            <span className={`text-sm ${priceChangeColor}`}>
+                              {priceChangePrefix}
+                              {priceChange.toFixed(4)}
+                            </span>
+                          )}
+                      </div>
                     </div>
                     <div className="text-sm space-y-1">
                       <div className="flex justify-between">
