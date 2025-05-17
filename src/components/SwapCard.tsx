@@ -13,6 +13,7 @@ import { parseEther, WriteContractParameters } from "viem";
 import { base } from "wagmi/chains";
 import { config } from "@/config/wagmi";
 import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
+import { usePublicClient } from "wagmi";
 
 // ERC20 ABI for approve function
 const ERC20_ABI = [
@@ -31,6 +32,7 @@ const ERC20_ABI = [
 export function SwapCard() {
   const { wallet, connectWallet } = useWallet();
   const { toast } = useToast();
+  const publicClient = usePublicClient();
 
   const [tokenIn, setTokenIn] = useState<Token | null>(null);
   const [tokenOut, setTokenOut] = useState<Token | null>(null);
@@ -38,6 +40,7 @@ export function SwapCard() {
   const [amountOut, setAmountOut] = useState("");
   const [loading, setLoading] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [estimatedAmount, setEstimatedAmount] = useState<bigint | undefined>();
 
   const tokenInBalance = useTokenBalance(tokenIn);
   const tokenOutBalance = useTokenBalance(tokenOut);
@@ -46,6 +49,59 @@ export function SwapCard() {
     wallet.address,
     wallet.chainId
   );
+
+  // Get quote from contract using viem
+  useEffect(() => {
+    const getEstimate = async () => {
+      if (
+        !tokenIn ||
+        !tokenOut ||
+        !amountIn ||
+        parseFloat(amountIn) <= 0 ||
+        !ROUTER_ADDRESSES[wallet.chainId] ||
+        !publicClient
+      ) {
+        setEstimatedAmount(undefined);
+        return;
+      }
+
+      try {
+        const result = await publicClient.readContract({
+          address: ROUTER_ADDRESSES[wallet.chainId] as `0x${string}`,
+          abi: ROUTER_ABI,
+          functionName: "exchangeEstimate",
+          args: [
+            tokenIn.address as `0x${string}`,
+            tokenOut.address as `0x${string}`,
+            parseEther(amountIn),
+          ],
+        });
+        setEstimatedAmount(result as bigint);
+      } catch (error) {
+        console.error("Error getting estimate:", error);
+        setEstimatedAmount(undefined);
+      }
+    };
+
+    getEstimate();
+    // Set up interval for periodic updates
+    const interval = setInterval(getEstimate, 10000);
+    return () => clearInterval(interval);
+  }, [tokenIn, tokenOut, amountIn, wallet.chainId, publicClient]);
+
+  console.log("estimatedAmount", estimatedAmount);
+
+  // Update amountOut when estimate changes
+  useEffect(() => {
+    if (estimatedAmount !== undefined) {
+      // Convert from wei to token units
+      const formattedAmount =
+        Number(estimatedAmount) / Math.pow(10, tokenOut?.decimals || 18);
+      setAmountOut(formattedAmount.toFixed(6));
+    } else {
+      setAmountOut("");
+    }
+  }, [estimatedAmount, tokenOut?.decimals]);
 
   const { writeContractAsync } = useXWriteContract({
     onSubmitted: (hash) => {
@@ -97,31 +153,6 @@ export function SwapCard() {
       setTokenOut(tokens[1]);
     }
   }, [wallet.chainId, tokenIn, tokenOut]);
-
-  // Simulate getting a quote
-  useEffect(() => {
-    if (amountIn && tokenIn && tokenOut) {
-      // Simulate price calculation
-      // In a real app, this would call a price oracle or router contract
-      let mockRate;
-      if (wallet.chainId === 71) {
-        // Conflux
-        mockRate = 1;
-      } else {
-        // Base or other
-        mockRate =
-          tokenIn.symbol === "ETH"
-            ? 2000
-            : tokenIn.symbol === "USDC"
-            ? 1
-            : 0.0005;
-      }
-      const calculatedAmount = parseFloat(amountIn) * mockRate;
-      setAmountOut(calculatedAmount.toFixed(6));
-    } else {
-      setAmountOut("");
-    }
-  }, [amountIn, tokenIn, tokenOut, wallet.chainId]);
 
   const handleSwapTokens = () => {
     const tempToken = tokenIn;

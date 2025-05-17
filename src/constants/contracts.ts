@@ -2,7 +2,7 @@ import { CONFLUX_CHAIN_ID, BASE_CHAIN_ID } from "./tokens";
 
 // Router contract addresses
 export const ROUTER_ADDRESSES = {
-  [CONFLUX_CHAIN_ID]: "0x0615F1A8f486302d7b6272b539D61F33a574b051", // Conflux router address
+  [CONFLUX_CHAIN_ID]: "0xd2a4a0b69B4ecB1926750BA6D170B907f2dcbEb8", // Conflux router address
   [BASE_CHAIN_ID]: "0x327Df1E6de05895d2ab08513aaDD9313Fe505D86", // Base router address
 } as const;
 
@@ -18,6 +18,17 @@ export const ROUTER_ABI = [
       { name: "amountOut", type: "uint256" },
       { name: "limits", type: "uint256" },
       { name: "deadline", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "exchangeEstimate",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "tokenInput", type: "address" },
+      { name: "tokenOutput", type: "address" },
+      { name: "amountIn", type: "uint256" },
     ],
     outputs: [{ name: "", type: "uint256" }],
   },

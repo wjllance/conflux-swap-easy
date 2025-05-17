@@ -435,6 +435,7 @@ interface iworldPublicFactory {
 
 // World Public Swap
 
+
 contract worldPublicSwapVaults{
     using SafeERC20 for IERC20;
 
@@ -735,10 +736,12 @@ contract worldPublicSwapVaults{
 
     function getLpPrice(address _lp) public view returns (uint price){
         require(_lp!=address(0),"World Swap Vaults: cant be 0 address");
-        if(reserves[_lp].priceCumulative[1] == 0){
+
+        (uint[2] memory reserve, , ) = getLpReserve(_lp);
+        if(reserve[1] == 0){
             price = 1 ether;
         }else{
-            price = reserves[_lp].priceCumulative[0]* 1 ether/reserves[_lp].priceCumulative[1];
+            price = reserve[1] * 1 ether / reserve[0];
         }
     }
     function getLpPair(address _lp) public view returns (address[2] memory){
@@ -773,12 +776,12 @@ contract worldPublicSwapVaults{
         if(_exVaults.tokens[0] == slc){
             tempAmount0 = inputAmount;
         }else{
-            tempAmount0 = inputAmount * getLpPrice(getCoinToStableLpPair[_exVaults.tokens[0]]);
+            tempAmount0 = inputAmount * getLpPrice(getCoinToStableLpPair[_exVaults.tokens[0]]) / 1 ether;
         }
         if(_exVaults.tokens[1] == slc){
             tempAmount1 = outputAmount;
         }else{
-            tempAmount1 = outputAmount * getLpPrice(getCoinToStableLpPair[_exVaults.tokens[1]]);
+            tempAmount1 = outputAmount * getLpPrice(getCoinToStableLpPair[_exVaults.tokens[1]]) / 1 ether;
         }
         
         if(tempAmount0 > tempAmount1){
@@ -806,6 +809,43 @@ contract worldPublicSwapVaults{
         _exVaults.amountOut = amountOut;
         _exVaults.Limits = limits;
         return exchange(_exVaults,deadline);
+    }
+
+    function exchangeEstimate(address tokenInput, address tokenOutput, uint amountIn) public view returns(uint){
+        require(tokenInput != tokenOutput,"World Swap Vaults: can't swap same token");
+        uint inputAmount;
+        uint outputAmount;
+        uint plusAmount;
+        // uint tempAmount;
+        uint tempAmount0;
+        uint tempAmount1;
+        inputAmount = IERC20(tokenInput).balanceOf(address(this));
+        outputAmount = IERC20(tokenOutput).balanceOf(address(this));
+        
+        // IERC20(tokenInput).safeTransferFrom(msg.sender,address(this),_exVaults.amountIn);
+        // tempAmount = IERC20(_exVaults.tokens[0]).balanceOf(address(this)) - inputAmount;
+
+        if(tokenInput == slc){
+            tempAmount0 = inputAmount ;
+        }else{
+            tempAmount0 = inputAmount * getLpPrice(getCoinToStableLpPair[tokenInput]) / 1 ether;
+        }
+        if(tokenOutput == slc){
+            tempAmount1 = outputAmount;
+        }else{
+            tempAmount1 = outputAmount * getLpPrice(getCoinToStableLpPair[tokenOutput]) / 1 ether;
+        }
+        
+        if(tempAmount0 > tempAmount1){
+            inputAmount = inputAmount * tempAmount1 / tempAmount0;
+        }else{
+            outputAmount = outputAmount * tempAmount0 / tempAmount1;
+        }
+
+        plusAmount = inputAmount * outputAmount;
+
+        outputAmount = (outputAmount - plusAmount / (amountIn + inputAmount)) * 99 / 100;
+        return outputAmount;
     }
 
     // ======================== contract base methods =====================
