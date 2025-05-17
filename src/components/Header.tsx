@@ -1,23 +1,23 @@
-
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { formatAddress } from "@/utils/formatters";
 import { Link } from "react-router-dom";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NETWORKS, BASE_CHAIN_ID, CONFLUX_CHAIN_ID } from "@/constants/tokens";
 import { ChevronDown } from "lucide-react";
 
 export function Header() {
-  const { wallet, connectWallet, disconnectWallet, switchNetwork } = useWallet();
+  const { wallet, connectWallet, disconnectWallet, switchChain } = useWallet();
 
   const handleNetworkSwitch = async (chainId: number) => {
     if (wallet.isConnected) {
-      await switchNetwork(chainId);
+      console.log("switching chain", chainId);
+      await switchChain({ chainId });
     } else {
       await connectWallet(chainId);
     }
@@ -37,16 +37,16 @@ export function Header() {
           <Link to="/" className="text-2xl font-bold text-primary">
             ConfluxSwap
           </Link>
-          
+
           <nav className="hidden md:flex space-x-4">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
             >
               Swap
             </Link>
-            <Link 
-              to="/liquidity" 
+            <Link
+              to="/liquidity"
               className="px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
             >
               Liquidity
@@ -63,28 +63,29 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleNetworkSwitch(CONFLUX_CHAIN_ID)}>
+              <DropdownMenuItem
+                onClick={() => handleNetworkSwitch(CONFLUX_CHAIN_ID)}
+              >
                 Conflux eSpace
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleNetworkSwitch(BASE_CHAIN_ID)}>
+              <DropdownMenuItem
+                onClick={() => handleNetworkSwitch(BASE_CHAIN_ID)}
+              >
                 Base
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           {wallet.isConnected ? (
-            <Button 
-              variant="outline" 
-              className="rounded-full" 
+            <Button
+              variant="outline"
+              className="rounded-full"
               onClick={disconnectWallet}
             >
-              {formatAddress(wallet.address || '')}
+              {formatAddress(wallet.address || "")}
             </Button>
           ) : (
-            <Button
-              className="rounded-full"
-              onClick={() => connectWallet()}
-            >
+            <Button className="rounded-full" onClick={() => connectWallet()}>
               Connect Wallet
             </Button>
           )}
