@@ -35,7 +35,7 @@ export function Header() {
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center space-x-6">
           <Link to="/" className="text-2xl font-bold text-primary">
-            ConfluxSwap
+            WorldPublicSwap
           </Link>
 
           <nav className="hidden md:flex space-x-4">
