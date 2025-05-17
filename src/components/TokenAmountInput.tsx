@@ -1,7 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { TokenSelector } from "@/components/TokenSelector";
-import { Token } from "@/constants/tokens";
+import { Token, CONFLUX_TOKENS } from "@/constants/tokens";
 import { formatCurrency } from "@/utils/formatters";
 
 interface TokenAmountInputProps {
@@ -13,6 +13,7 @@ interface TokenAmountInputProps {
   otherToken?: Token | null;
   balance?: string;
   readOnly?: boolean;
+  availableTokens?: Token[];
 }
 
 export function TokenAmountInput({
@@ -24,6 +25,7 @@ export function TokenAmountInput({
   otherToken,
   balance,
   readOnly = false,
+  availableTokens = CONFLUX_TOKENS,
 }: TokenAmountInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -74,6 +76,7 @@ export function TokenAmountInput({
           selectedToken={token}
           onSelectToken={setToken}
           otherSelectedToken={otherToken}
+          availableTokens={availableTokens}
         />
       </div>
     </div>

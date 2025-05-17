@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { CONFLUX_CHAIN_ID } from '@/constants/tokens';
+import { NETWORKS } from '@/constants/tokens';
 
 interface WalletState {
   isConnected: boolean;
@@ -34,6 +34,7 @@ export function useWallet() {
       
       if (accounts.length > 0) {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const chainIdDecimal = parseInt(chainId, 16);
         const balance = await window.ethereum.request({
           method: 'eth_getBalance',
           params: [accounts[0], 'latest']
@@ -42,7 +43,7 @@ export function useWallet() {
         setWallet({
           isConnected: true,
           address: accounts[0],
-          chainId: parseInt(chainId, 16),
+          chainId: chainIdDecimal,
           balance: parseInt(balance, 16).toString()
         });
         
@@ -56,7 +57,47 @@ export function useWallet() {
     }
   }, [toast]);
 
-  const connectWallet = useCallback(async () => {
+  const switchNetwork = async (targetChainId: number) => {
+    if (!window.ethereum) return false;
+
+    const network = NETWORKS[targetChainId];
+    if (!network) return false;
+
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: network.chainIdHex }],
+      });
+      return true;
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: network.chainIdHex,
+                chainName: network.name,
+                nativeCurrency: network.nativeCurrency,
+                rpcUrls: network.rpcUrls,
+                blockExplorerUrls: network.blockExplorerUrls,
+              },
+            ],
+          });
+          return true;
+        } catch (addError) {
+          console.error("Error adding network:", addError);
+          return false;
+        }
+      } else {
+        console.error("Error switching network:", switchError);
+        return false;
+      }
+    }
+  };
+
+  const connectWallet = useCallback(async (targetChainId?: number) => {
     try {
       if (!window.ethereum) {
         toast({
@@ -72,36 +113,18 @@ export function useWallet() {
       });
       
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const parsedChainId = parseInt(chainId, 16);
+      const currentChainId = parseInt(chainId, 16);
       
-      if (parsedChainId !== CONFLUX_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: `0x${CONFLUX_CHAIN_ID.toString(16)}` }],
+      // If a specific chain is requested and we're not on it, switch
+      if (targetChainId && currentChainId !== targetChainId) {
+        const switched = await switchNetwork(targetChainId);
+        if (!switched) {
+          toast({
+            title: "Network switch failed",
+            description: `Could not switch to ${NETWORKS[targetChainId]?.name || 'requested network'}`,
+            variant: "destructive",
           });
-        } catch (switchError: any) {
-          // This error code indicates that the chain has not been added to MetaMask
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [
-                {
-                  chainId: `0x${CONFLUX_CHAIN_ID.toString(16)}`,
-                  chainName: 'Conflux eSpace',
-                  nativeCurrency: {
-                    name: 'Conflux',
-                    symbol: 'CFX',
-                    decimals: 18,
-                  },
-                  rpcUrls: ['https://evm.confluxrpc.com'],
-                  blockExplorerUrls: ['https://evm.confluxscan.io'],
-                },
-              ],
-            });
-          } else {
-            throw switchError;
-          }
+          return;
         }
       }
       
@@ -110,16 +133,20 @@ export function useWallet() {
         params: [accounts[0], 'latest']
       });
       
+      // Get the current chain ID again in case we switched
+      const newChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const finalChainId = parseInt(newChainId, 16);
+      
       setWallet({
         isConnected: true,
         address: accounts[0],
-        chainId: CONFLUX_CHAIN_ID,
+        chainId: finalChainId,
         balance: parseInt(balance, 16).toString()
       });
       
       toast({
         title: "Wallet connected",
-        description: "Your wallet has been connected successfully",
+        description: `Connected to ${NETWORKS[finalChainId]?.name || 'network'}`,
       });
     } catch (error: any) {
       console.error("Error connecting wallet:", error);
@@ -169,6 +196,7 @@ export function useWallet() {
   return {
     wallet,
     connectWallet,
-    disconnectWallet
+    disconnectWallet,
+    switchNetwork
   };
 }

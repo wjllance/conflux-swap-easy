@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TokenAmountInput } from "@/components/TokenAmountInput";
 import { useToast } from "@/components/ui/use-toast";
-import { CONFLUX_TOKENS, Token } from "@/constants/tokens";
+import { Token, NETWORKS } from "@/constants/tokens";
 import { useWallet } from "@/hooks/useWallet";
 import { ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -17,28 +18,42 @@ export function SwapCard() {
   const [amountOut, setAmountOut] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Initialize with default tokens
+  // Get network tokens
+  const getNetworkTokens = () => {
+    if (!wallet.chainId || !NETWORKS[wallet.chainId]) {
+      return [];
+    }
+    return NETWORKS[wallet.chainId].tokens;
+  };
+
+  // Initialize with default tokens when network changes
   useEffect(() => {
-    if (CONFLUX_TOKENS.length > 0 && !tokenIn) {
-      setTokenIn(CONFLUX_TOKENS[0]);
+    const tokens = getNetworkTokens();
+    if (tokens.length > 0 && (!tokenIn || !tokens.some(t => t.address === tokenIn.address))) {
+      setTokenIn(tokens[0]);
     }
-    if (CONFLUX_TOKENS.length > 1 && !tokenOut) {
-      setTokenOut(CONFLUX_TOKENS[1]);
+    if (tokens.length > 1 && (!tokenOut || !tokens.some(t => t.address === tokenOut.address))) {
+      setTokenOut(tokens[1]);
     }
-  }, [tokenIn, tokenOut]);
+  }, [wallet.chainId, tokenIn, tokenOut]);
 
   // Simulate getting a quote
   useEffect(() => {
     if (amountIn && tokenIn && tokenOut) {
       // Simulate price calculation
       // In a real app, this would call a price oracle or router contract
-      const mockRate = tokenIn.symbol === "CFX" ? 25.5 : 0.039;
+      let mockRate;
+      if (wallet.chainId === 1030) { // Conflux
+        mockRate = tokenIn.symbol === "CFX" ? 25.5 : 0.039;
+      } else { // Base or other
+        mockRate = tokenIn.symbol === "ETH" ? 2000 : tokenIn.symbol === "USDC" ? 1 : 0.0005;
+      }
       const calculatedAmount = parseFloat(amountIn) * mockRate;
       setAmountOut(calculatedAmount.toFixed(6));
     } else {
       setAmountOut("");
     }
-  }, [amountIn, tokenIn, tokenOut]);
+  }, [amountIn, tokenIn, tokenOut, wallet.chainId]);
 
   const handleSwapTokens = () => {
     const tempToken = tokenIn;
@@ -107,6 +122,7 @@ export function SwapCard() {
             setToken={setTokenIn}
             otherToken={tokenOut}
             balance="10.0" // Replace with actual user balance
+            availableTokens={getNetworkTokens()}
           />
           
           <div className="flex justify-center">
@@ -128,6 +144,7 @@ export function SwapCard() {
             setToken={setTokenOut}
             otherToken={tokenIn}
             readOnly={true}
+            availableTokens={getNetworkTokens()}
           />
           
           <div className="text-sm text-muted-foreground">

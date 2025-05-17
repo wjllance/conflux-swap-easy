@@ -16,18 +16,20 @@ interface TokenSelectorProps {
   selectedToken: Token | null;
   onSelectToken: (token: Token) => void;
   otherSelectedToken?: Token | null;
+  availableTokens?: Token[];
 }
 
 export function TokenSelector({
   selectedToken,
   onSelectToken,
   otherSelectedToken,
+  availableTokens = CONFLUX_TOKENS,
 }: TokenSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter tokens based on search and exclude the other selected token
-  const filteredTokens = CONFLUX_TOKENS.filter(
+  const filteredTokens = availableTokens.filter(
     (token) =>
       token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) &&
       (!otherSelectedToken || token.address !== otherSelectedToken.address)

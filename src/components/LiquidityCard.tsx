@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TokenAmountInput } from "@/components/TokenAmountInput";
 import { useToast } from "@/components/ui/use-toast";
-import { CONFLUX_TOKENS, Token } from "@/constants/tokens";
+import { Token, NETWORKS } from "@/constants/tokens";
 import { useWallet } from "@/hooks/useWallet";
 import { Plus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -17,25 +18,39 @@ export function LiquidityCard() {
   const [amountB, setAmountB] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Initialize with default tokens
+  // Get network tokens
+  const getNetworkTokens = () => {
+    if (!wallet.chainId || !NETWORKS[wallet.chainId]) {
+      return [];
+    }
+    return NETWORKS[wallet.chainId].tokens;
+  };
+
+  // Initialize with default tokens when network changes
   useEffect(() => {
-    if (CONFLUX_TOKENS.length > 0 && !tokenA) {
-      setTokenA(CONFLUX_TOKENS[0]);
+    const tokens = getNetworkTokens();
+    if (tokens.length > 0 && (!tokenA || !tokens.some(t => t.address === tokenA.address))) {
+      setTokenA(tokens[0]);
     }
-    if (CONFLUX_TOKENS.length > 1 && !tokenB) {
-      setTokenB(CONFLUX_TOKENS[1]);
+    if (tokens.length > 1 && (!tokenB || !tokens.some(t => t.address === tokenB.address))) {
+      setTokenB(tokens[1]);
     }
-  }, [tokenA, tokenB]);
+  }, [wallet.chainId, tokenA, tokenB]);
 
   // Simulate getting a quote for token B based on token A amount
   useEffect(() => {
     if (amountA && tokenA && tokenB) {
       // Simulate price calculation
-      const mockRate = tokenA.symbol === "CFX" ? 25.5 : 0.039;
+      let mockRate;
+      if (wallet.chainId === 1030) { // Conflux
+        mockRate = tokenA.symbol === "CFX" ? 25.5 : 0.039;
+      } else { // Base or other
+        mockRate = tokenA.symbol === "ETH" ? 2000 : tokenA.symbol === "USDC" ? 1 : 0.0005;
+      }
       const calculatedAmount = parseFloat(amountA) * mockRate;
       setAmountB(calculatedAmount.toFixed(6));
     }
-  }, [amountA, tokenA, tokenB]);
+  }, [amountA, tokenA, tokenB, wallet.chainId]);
 
   const handleAddLiquidity = async () => {
     if (!wallet.isConnected) {
@@ -97,6 +112,7 @@ export function LiquidityCard() {
             setToken={setTokenA}
             otherToken={tokenB}
             balance="10.0" // Replace with actual balance
+            availableTokens={getNetworkTokens()}
           />
           
           <div className="flex justify-center">
@@ -113,6 +129,7 @@ export function LiquidityCard() {
             setToken={setTokenB}
             otherToken={tokenA}
             balance="250.0" // Replace with actual balance
+            availableTokens={getNetworkTokens()}
           />
           
           <div className="p-4 rounded-lg bg-secondary/50 mt-4">
