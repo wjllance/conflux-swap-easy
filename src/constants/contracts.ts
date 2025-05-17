@@ -2,7 +2,7 @@ import { CONFLUX_CHAIN_ID, BASE_CHAIN_ID } from "./tokens";
 
 // Router contract addresses
 export const ROUTER_ADDRESSES = {
-  [CONFLUX_CHAIN_ID]: "0xaffe1fd254365a2590a26bfacb6c7dc002e47ee3", // Conflux router address
+  [CONFLUX_CHAIN_ID]: "0x0615F1A8f486302d7b6272b539D61F33a574b051", // Conflux router address
   [BASE_CHAIN_ID]: "0x327Df1E6de05895d2ab08513aaDD9313Fe505D86", // Base router address
 } as const;
 
