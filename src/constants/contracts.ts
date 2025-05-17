@@ -32,4 +32,28 @@ export const ROUTER_ABI = [
     ],
     outputs: [{ name: "", type: "uint256" }],
   },
+  {
+    name: "getPair",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "token0", type: "address" },
+      { name: "token1", type: "address" },
+    ],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    // {"inputs":[{"internalType":"address","name":"_lp","type":"address"},{"internalType":"uint256[2]","name":"_amountEstimated","type":"uint256[2]"}],"name":"xLpSubscribe","outputs":[{"internalType":"uint256[2]","name":"_amountActual","type":"uint256[2]"},{"internalType":"uint256","name":"_amountLp","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}
+    name: "xLpSubscribe",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "lp", type: "address" },
+      { name: "amounts", type: "uint256[2]" },
+    ],
+    outputs: [
+      { name: "", type: "uint256[2]" },
+      { name: "", type: "uint256" },
+    ],
+  },
 ] as const;
