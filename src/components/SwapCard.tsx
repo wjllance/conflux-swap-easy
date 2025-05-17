@@ -7,6 +7,12 @@ import { useWallet } from "@/hooks/useWallet";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
+import useXWriteContract from "@/components/useXWriteContract";
+import { parseEther, WriteContractParameters } from "viem";
+import { base } from "wagmi/chains";
+import { config } from "@/config/wagmi";
+import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
+import { UseWriteContractParameters } from "wagmi";
 
 export function SwapCard() {
   const { wallet, connectWallet } = useWallet();
@@ -20,6 +26,32 @@ export function SwapCard() {
 
   const tokenInBalance = useTokenBalance(tokenIn);
   const tokenOutBalance = useTokenBalance(tokenOut);
+
+  const { writeContractAsync } = useXWriteContract({
+    onSubmitted: (hash) => {
+      toast({
+        title: "Transaction submitted",
+        description: `Transaction hash: ${hash}`,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Swap successful",
+        description: `Swapped ${amountIn} ${tokenIn.symbol} for ${amountOut} ${tokenOut.symbol}`,
+      });
+      // Reset form
+      setAmountIn("");
+      setAmountOut("");
+    },
+    onError: (error) => {
+      toast({
+        title: "Swap failed",
+        description:
+          error.message || "Failed to execute swap. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Get network tokens
   const getNetworkTokens = () => {
@@ -97,22 +129,78 @@ export function SwapCard() {
     setLoading(true);
 
     try {
-      // Simulate transaction delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const routerAddress = ROUTER_ADDRESSES[wallet.chainId];
+      if (!routerAddress) {
+        throw new Error("Router contract not found for this network");
+      }
 
-      toast({
-        title: "Swap successful",
-        description: `Swapped ${amountIn} ${tokenIn.symbol} for ${amountOut} ${tokenOut.symbol}`,
-      });
+      // Calculate minimum amount out with 0.5% slippage
+      const minAmountOut = parseFloat(amountOut) * 0.995;
+      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
 
-      // Reset form
-      setAmountIn("");
-      setAmountOut("");
+      let params;
+
+      if (tokenIn.address === "0x0000000000000000000000000000000000000000") {
+        // Native token (ETH/CFX) to token
+        params = {
+          address: routerAddress,
+          abi: ROUTER_ABI,
+          functionName: "swapExactETHForTokens",
+          args: [
+            parseEther(minAmountOut.toString()),
+            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
+            wallet.address as `0x${string}`,
+            BigInt(deadline),
+          ],
+          chain: wallet.chainId === 1030 ? config.chains[0] : base,
+          account: wallet.address,
+          value: parseEther(amountIn),
+        };
+      } else if (
+        tokenOut.address === "0x0000000000000000000000000000000000000000"
+      ) {
+        // Token to native token (ETH/CFX)
+        params = {
+          address: routerAddress,
+          abi: ROUTER_ABI,
+          functionName: "swapExactTokensForETH",
+          args: [
+            parseEther(amountIn),
+            parseEther(minAmountOut.toString()),
+            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
+            wallet.address as `0x${string}`,
+            BigInt(deadline),
+          ],
+          chain: wallet.chainId === 1030 ? config.chains[0] : base,
+          account: wallet.address,
+        };
+      } else {
+        // Token to token
+        params = {
+          address: routerAddress,
+          abi: ROUTER_ABI,
+          functionName: "swapExactTokensForTokens",
+          args: [
+            parseEther(amountIn),
+            parseEther(minAmountOut.toString()),
+            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
+            wallet.address as `0x${string}`,
+            BigInt(deadline),
+          ],
+          chain: wallet.chainId === 1030 ? config.chains[0] : base,
+          account: wallet.address,
+        };
+      }
+
+      await writeContractAsync(params);
     } catch (error) {
       console.error("Swap error:", error);
       toast({
         title: "Swap failed",
-        description: "Failed to execute swap. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to execute swap. Please try again.",
         variant: "destructive",
       });
     } finally {
