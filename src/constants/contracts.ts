@@ -37,10 +37,10 @@ export const ROUTER_ABI = [
     type: "function",
     stateMutability: "view",
     inputs: [
-      { name: "token0", type: "address" },
-      { name: "token1", type: "address" },
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
     ],
-    outputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "pair", type: "address" }],
   },
   {
     // {"inputs":[{"internalType":"address","name":"_lp","type":"address"},{"internalType":"uint256[2]","name":"_amountEstimated","type":"uint256[2]"}],"name":"xLpSubscribe","outputs":[{"internalType":"uint256[2]","name":"_amountActual","type":"uint256[2]"},{"internalType":"uint256","name":"_amountLp","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}
@@ -52,6 +52,31 @@ export const ROUTER_ABI = [
       { name: "amounts", type: "uint256[2]" },
     ],
     outputs: [
+      { name: "", type: "uint256[2]" },
+      { name: "", type: "uint256" },
+    ],
+  },
+  {
+    name: "getLpPrice",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "_lp", type: "address" }],
+    outputs: [{ name: "price", type: "uint256" }],
+  },
+  {
+    name: "getLpPair",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "_lp", type: "address" }],
+    outputs: [{ name: "", type: "address[2]" }],
+  },
+  {
+    name: "getLpReserve",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "_lp", type: "address" }],
+    outputs: [
+      { name: "", type: "uint256[2]" },
       { name: "", type: "uint256[2]" },
       { name: "", type: "uint256" },
     ],

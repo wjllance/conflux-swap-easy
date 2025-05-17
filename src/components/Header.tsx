@@ -51,6 +51,12 @@ export function Header() {
             >
               Liquidity
             </Link>
+            <Link
+              to="/lp-prices"
+              className="px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+            >
+              LP Prices
+            </Link>
           </nav>
         </div>
 

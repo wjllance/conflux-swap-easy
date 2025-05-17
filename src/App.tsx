@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import LiquidityPage from "./pages/LiquidityPage";
+import LpPricePage from "./pages/LpPricePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/liquidity" element={<LiquidityPage />} />
+              <Route path="/lp-prices" element={<LpPricePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

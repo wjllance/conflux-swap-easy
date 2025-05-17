@@ -10,28 +10,28 @@ export const CONFLUX_TOKENS: Token[] = [
   {
     name: "USDT",
     symbol: "USDT",
-    address: "0xAbE57fD58A7DC733F756B9661bA50b7fBBdf9bCC", // Example address
+    address: "0xAbE57fD58A7DC733F756B9661bA50b7fBBdf9bCC",
     decimals: 18,
     logoURI: "https://scroll-tech.github.io/token-list/data/USDT/logo.svg",
   },
   {
     name: "USDC",
     symbol: "USDC",
-    address: "0x37f4aB810a460943534780e1ecca9b2779c31501", // Example address
+    address: "0x37f4aB810a460943534780e1ecca9b2779c31501",
     decimals: 18,
     logoURI: "https://ethereum-optimism.github.io/data/USDC/logo.png",
   },
   {
     name: "Bitcoin",
     symbol: "BTC",
-    address: "0x3f2f29Ccf9898bad1A03e4e55299eb314e3effaB", // Example address
+    address: "0x3f2f29Ccf9898bad1A03e4e55299eb314e3effaB",
     decimals: 18,
     logoURI: "https://scroll-tech.github.io/token-list/data/WBTC/logo.svg",
   },
   {
     name: "Ethereum",
     symbol: "ETH",
-    address: "0x4Ed3fF9d3779Af07Fc7c6592188E8bD29045988d", // Example address
+    address: "0x4Ed3fF9d3779Af07Fc7c6592188E8bD29045988d",
     decimals: 18,
     logoURI: "/images/ethereum-eth-logo.png",
   },
