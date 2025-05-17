@@ -12,7 +12,6 @@ import { parseEther, WriteContractParameters } from "viem";
 import { base } from "wagmi/chains";
 import { config } from "@/config/wagmi";
 import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
-import { UseWriteContractParameters } from "wagmi";
 
 export function SwapCard() {
   const { wallet, connectWallet } = useWallet();
@@ -138,61 +137,23 @@ export function SwapCard() {
       const minAmountOut = parseFloat(amountOut) * 0.995;
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
 
-      let params;
+      // Prepare parameters for xexchange
+      const baseParams = {
+        address: routerAddress as `0x${string}`,
+        abi: ROUTER_ABI,
+        functionName: "xexchange" as const,
+        args: [
+          [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
+          parseEther(amountIn),
+          parseEther(minAmountOut.toString()),
+          parseEther(amountIn), // Using amountIn as limits for now
+          BigInt(deadline),
+        ] as const,
+        chain: wallet.chainId === 1030 ? config.chains[0] : base,
+        account: wallet.address as `0x${string}`,
+      };
 
-      if (tokenIn.address === "0x0000000000000000000000000000000000000000") {
-        // Native token (ETH/CFX) to token
-        params = {
-          address: routerAddress,
-          abi: ROUTER_ABI,
-          functionName: "swapExactETHForTokens",
-          args: [
-            parseEther(minAmountOut.toString()),
-            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
-            wallet.address as `0x${string}`,
-            BigInt(deadline),
-          ],
-          chain: wallet.chainId === 1030 ? config.chains[0] : base,
-          account: wallet.address,
-          value: parseEther(amountIn),
-        };
-      } else if (
-        tokenOut.address === "0x0000000000000000000000000000000000000000"
-      ) {
-        // Token to native token (ETH/CFX)
-        params = {
-          address: routerAddress,
-          abi: ROUTER_ABI,
-          functionName: "swapExactTokensForETH",
-          args: [
-            parseEther(amountIn),
-            parseEther(minAmountOut.toString()),
-            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
-            wallet.address as `0x${string}`,
-            BigInt(deadline),
-          ],
-          chain: wallet.chainId === 1030 ? config.chains[0] : base,
-          account: wallet.address,
-        };
-      } else {
-        // Token to token
-        params = {
-          address: routerAddress,
-          abi: ROUTER_ABI,
-          functionName: "swapExactTokensForTokens",
-          args: [
-            parseEther(amountIn),
-            parseEther(minAmountOut.toString()),
-            [tokenIn.address, tokenOut.address] as readonly `0x${string}`[],
-            wallet.address as `0x${string}`,
-            BigInt(deadline),
-          ],
-          chain: wallet.chainId === 1030 ? config.chains[0] : base,
-          account: wallet.address,
-        };
-      }
-
-      await writeContractAsync(params);
+      await writeContractAsync(baseParams);
     } catch (error) {
       console.error("Swap error:", error);
       toast({
