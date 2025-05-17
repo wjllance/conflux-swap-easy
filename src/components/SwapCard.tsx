@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Token, NETWORKS } from "@/constants/tokens";
 import { useWallet } from "@/hooks/useWallet";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
+import { useTokenAllowance } from "@/hooks/useTokenAllowance";
 import { ArrowDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import useXWriteContract from "@/components/useXWriteContract";
@@ -12,6 +13,20 @@ import { parseEther, WriteContractParameters } from "viem";
 import { base } from "wagmi/chains";
 import { config } from "@/config/wagmi";
 import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
+
+// ERC20 ABI for approve function
+const ERC20_ABI = [
+  {
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
 
 export function SwapCard() {
   const { wallet, connectWallet } = useWallet();
@@ -22,9 +37,15 @@ export function SwapCard() {
   const [amountIn, setAmountIn] = useState("");
   const [amountOut, setAmountOut] = useState("");
   const [loading, setLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   const tokenInBalance = useTokenBalance(tokenIn);
   const tokenOutBalance = useTokenBalance(tokenOut);
+  const tokenInAllowance = useTokenAllowance(
+    tokenIn,
+    wallet.address,
+    wallet.chainId
+  );
 
   const { writeContractAsync } = useXWriteContract({
     onSubmitted: (hash) => {
@@ -83,9 +104,9 @@ export function SwapCard() {
       // Simulate price calculation
       // In a real app, this would call a price oracle or router contract
       let mockRate;
-      if (wallet.chainId === 1030) {
+      if (wallet.chainId === 71) {
         // Conflux
-        mockRate = tokenIn.symbol === "CFX" ? 25.5 : 0.039;
+        mockRate = 1;
       } else {
         // Base or other
         mockRate =
@@ -149,9 +170,24 @@ export function SwapCard() {
           parseEther(amountIn), // Using amountIn as limits for now
           BigInt(deadline),
         ] as const,
-        chain: wallet.chainId === 1030 ? config.chains[0] : base,
+        chain: wallet.chainId === 71 ? config.chains[0] : base,
         account: wallet.address as `0x${string}`,
       };
+
+      // Log parameters with BigInt values converted to strings
+
+      console.log(
+        "baseParams",
+        JSON.stringify({
+          args: baseParams.args.map((arg) =>
+            typeof arg === "bigint"
+              ? arg.toString()
+              : Array.isArray(arg)
+              ? arg.map((item) => item.toString())
+              : arg
+          ),
+        })
+      );
 
       await writeContractAsync(baseParams);
     } catch (error) {
@@ -169,8 +205,58 @@ export function SwapCard() {
     }
   };
 
+  const handleApprove = async () => {
+    if (!wallet.isConnected || !tokenIn || !amountIn) {
+      return;
+    }
+
+    setApproving(true);
+
+    try {
+      const routerAddress = ROUTER_ADDRESSES[wallet.chainId];
+      if (!routerAddress) {
+        throw new Error("Router contract not found for this network");
+      }
+
+      const approveParams = {
+        address: tokenIn.address as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: "approve" as const,
+        args: [routerAddress as `0x${string}`, parseEther(amountIn)] as const,
+        chain: wallet.chainId === 71 ? config.chains[0] : base,
+        account: wallet.address as `0x${string}`,
+      };
+
+      await writeContractAsync(approveParams);
+
+      toast({
+        title: "Approval successful",
+        description: `Approved ${amountIn} ${tokenIn.symbol} for swapping`,
+      });
+    } catch (error) {
+      console.error("Approve error:", error);
+      toast({
+        title: "Approval failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to approve token. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const needsApproval =
+    tokenIn &&
+    tokenIn.address !== "0x0000000000000000000000000000000000000000" &&
+    tokenInAllowance !== undefined &&
+    parseFloat(amountIn) > 0 &&
+    tokenInAllowance < parseEther(amountIn);
+
   const isSwapDisabled =
-    !wallet.isConnected || !amountIn || !tokenIn || !tokenOut;
+    !wallet.isConnected || !amountIn || !tokenIn || !tokenOut || needsApproval;
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -227,18 +313,28 @@ export function SwapCard() {
             )}
           </div>
 
-          <Button
-            className="w-full rounded-xl h-14 text-base font-semibold"
-            disabled={isSwapDisabled}
-            onClick={handleSwap}
-            loading={loading}
-          >
-            {!wallet.isConnected
-              ? "Connect Wallet"
-              : !amountIn
-              ? "Enter an Amount"
-              : "Swap"}
-          </Button>
+          {needsApproval ? (
+            <Button
+              className="w-full rounded-xl h-14 text-base font-semibold"
+              onClick={handleApprove}
+              loading={approving}
+            >
+              Approve {tokenIn.symbol}
+            </Button>
+          ) : (
+            <Button
+              className="w-full rounded-xl h-14 text-base font-semibold"
+              disabled={isSwapDisabled}
+              onClick={handleSwap}
+              loading={loading}
+            >
+              {!wallet.isConnected
+                ? "Connect Wallet"
+                : !amountIn
+                ? "Enter an Amount"
+                : "Swap"}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

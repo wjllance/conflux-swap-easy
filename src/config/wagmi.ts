@@ -5,7 +5,7 @@ import { NETWORKS } from "@/constants/tokens";
 
 // Create custom chain for Conflux
 const conflux = {
-  id: 1030,
+  id: 71,
   name: "Conflux eSpace",
   network: "conflux",
   nativeCurrency: {
@@ -14,8 +14,8 @@ const conflux = {
     decimals: 18,
   },
   rpcUrls: {
-    default: { http: ["https://evm.confluxrpc.com"] },
-    public: { http: ["https://evm.confluxrpc.com"] },
+    default: { http: ["https://evmtestnet.confluxrpc.com"] },
+    public: { http: ["https://evmtestnet.confluxrpc.com"] },
   },
   blockExplorers: {
     default: { name: "ConfluxScan", url: "https://evm.confluxscan.io" },

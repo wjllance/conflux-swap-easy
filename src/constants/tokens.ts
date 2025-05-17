@@ -8,32 +8,32 @@ export interface Token {
 
 export const CONFLUX_TOKENS: Token[] = [
   {
-    name: "Conflux",
-    symbol: "CFX",
-    address: "0x0000000000000000000000000000000000000000", // Native token
+    name: "USDT",
+    symbol: "USDT",
+    address: "0xAbE57fD58A7DC733F756B9661bA50b7fBBdf9bCC", // Example address
     decimals: 18,
-    logoURI: "https://cryptologos.cc/logos/conflux-cfx-logo.png",
+    logoURI: "https://scroll-tech.github.io/token-list/data/USDT/logo.svg",
   },
   {
-    name: "Wrapped Conflux",
-    symbol: "WCFX",
-    address: "0x14b2D3bC65e74DAE1030EAFd8ac30c533c976A9b", // Example address
+    name: "USDC",
+    symbol: "USDC",
+    address: "0x37f4aB810a460943534780e1ecca9b2779c31501", // Example address
     decimals: 18,
-    logoURI: "https://cryptologos.cc/logos/conflux-cfx-logo.png",
+    logoURI: "https://ethereum-optimism.github.io/data/USDC/logo.png",
   },
   {
-    name: "Flux Token",
-    symbol: "FLUX",
-    address: "0x0000000000000000000000000000000000000000", // Example address
+    name: "Bitcoin",
+    symbol: "BTC",
+    address: "0x3f2f29Ccf9898bad1A03e4e55299eb314e3effaB", // Example address
     decimals: 18,
-    logoURI: "https://cryptologos.cc/logos/zcash-zec-logo.png",
+    logoURI: "https://scroll-tech.github.io/token-list/data/WBTC/logo.svg",
   },
   {
-    name: "cUSDT",
-    symbol: "cUSDT",
-    address: "0xfe97E85d13ABD9c1c33384E796F10B73905637cE", // Example address
+    name: "Ethereum",
+    symbol: "ETH",
+    address: "0x4Ed3fF9d3779Af07Fc7c6592188E8bD29045988d", // Example address
     decimals: 18,
-    logoURI: "https://cryptologos.cc/logos/tether-usdt-logo.png",
+    logoURI: "/images/ethereum-eth-logo.png",
   },
 ];
 
@@ -69,7 +69,7 @@ export const BASE_TOKENS: Token[] = [
 ];
 
 // Network constants
-export const CONFLUX_CHAIN_ID = 1030;
+export const CONFLUX_CHAIN_ID = 71;
 export const BASE_CHAIN_ID = 8453;
 
 export interface NetworkInfo {
@@ -96,7 +96,8 @@ export const NETWORKS: Record<number, NetworkInfo> = {
       symbol: "CFX",
       decimals: 18,
     },
-    rpcUrls: ["https://evm.confluxrpc.com"],
+    // rpcUrls: ["https://evm.confluxrpc.com"],
+    rpcUrls: ["https://evmtestnet.confluxrpc.com"],
     blockExplorerUrls: ["https://evm.confluxscan.io"],
     tokens: CONFLUX_TOKENS,
   },
