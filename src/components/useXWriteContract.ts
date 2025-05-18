@@ -1,5 +1,5 @@
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WriteContractErrorType } from "viem";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -34,6 +34,23 @@ interface UseXWriteContractOptions {
   onError?: (error: WriteContractErrorType) => void;
 }
 
+export function useEventCallback<TCallback extends (...args: any[]) => any>(
+  fn?: TCallback | null
+): TCallback {
+  const ref = useRef(fn);
+
+  useEffect(() => {
+    ref.current = fn;
+  }, [fn]);
+
+  return useCallback(
+    function (...args: any[]) {
+      return ref.current && ref.current(...args);
+    },
+    [ref]
+  ) as any;
+}
+
 const useXWriteContract = ({
   onSubmitted,
   onSuccess,
@@ -41,6 +58,10 @@ const useXWriteContract = ({
 }: UseXWriteContractOptions = {}) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  const handleSubmitted = useEventCallback(onSubmitted);
+  const handleSuccess = useEventCallback(onSuccess);
+  const handleError = useEventCallback(onError);
 
   const {
     data: hash,
@@ -71,9 +92,9 @@ const useXWriteContract = ({
         title: "Transaction submitted",
         description: `Transaction hash: ${hash}`,
       });
-      onSubmitted?.(hash);
+      handleSubmitted?.(hash);
     }
-  }, [isSubmitted, hash, onSubmitted]);
+  }, [isSubmitted, hash, handleSubmitted]);
 
   // Handle submission error
   useEffect(() => {
@@ -88,9 +109,9 @@ const useXWriteContract = ({
         description: errorMessage,
         variant: "destructive",
       });
-      onError?.(submittedError as WriteContractErrorType);
+      handleError?.(submittedError as WriteContractErrorType);
     }
-  }, [submittedError, isError, onError]);
+  }, [submittedError, isError, handleError]);
 
   // Handle transaction execution error
   useEffect(() => {
@@ -105,9 +126,9 @@ const useXWriteContract = ({
         description: errorMessage,
         variant: "destructive",
       });
-      onError?.(writeError as WriteContractErrorType);
+      handleError?.(writeError as WriteContractErrorType);
     }
-  }, [writeError, isWriteError, onError]);
+  }, [writeError, isWriteError, handleError]);
 
   // Handle successful transaction
   useEffect(() => {
@@ -117,9 +138,12 @@ const useXWriteContract = ({
         title: "Transaction successful",
         description: "Your transaction has been confirmed.",
       });
-      onSuccess?.(receipt as TransactionReceipt);
+      handleSuccess?.(receipt as TransactionReceipt);
     }
-  }, [isSuccess, receipt, onSuccess]);
+  }, [isSuccess, receipt, handleSuccess]);
+
+  console.log("isSuccess", isSuccess);
+  console.log("isSubmitted", isSubmitted);
 
   return {
     hash,

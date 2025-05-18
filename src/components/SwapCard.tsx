@@ -7,7 +7,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { useTokenAllowance } from "@/hooks/useTokenAllowance";
 import { ArrowDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import useXWriteContract from "@/components/useXWriteContract";
 import { parseEther, WriteContractParameters } from "viem";
 import { base } from "wagmi/chains";
@@ -89,8 +89,6 @@ export function SwapCard() {
     return () => clearInterval(interval);
   }, [tokenIn, tokenOut, amountIn, wallet.chainId, publicClient]);
 
-  console.log("estimatedAmount", estimatedAmount);
-
   // Update amountOut when estimate changes
   useEffect(() => {
     if (estimatedAmount !== undefined) {
@@ -104,13 +102,7 @@ export function SwapCard() {
   }, [estimatedAmount, tokenOut?.decimals]);
 
   const { writeContractAsync } = useXWriteContract({
-    onSubmitted: (hash) => {
-      toast({
-        title: "Transaction submitted",
-        description: `Transaction hash: ${hash}`,
-      });
-    },
-    onSuccess: () => {
+    onSuccess: useCallback(() => {
       toast({
         title: "Swap successful",
         description: `Swapped ${amountIn} ${tokenIn.symbol} for ${amountOut} ${tokenOut.symbol}`,
@@ -118,15 +110,18 @@ export function SwapCard() {
       // Reset form
       setAmountIn("");
       setAmountOut("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Swap failed",
-        description:
-          error.message || "Failed to execute swap. Please try again.",
-        variant: "destructive",
-      });
-    },
+    }, [amountIn, amountOut, toast, tokenIn, tokenOut]),
+    onError: useCallback(
+      (error) => {
+        toast({
+          title: "Swap failed",
+          description:
+            error.message || "Failed to execute swap. Please try again.",
+          variant: "destructive",
+        });
+      },
+      [toast]
+    ),
   });
 
   // Get network tokens
