@@ -102,7 +102,7 @@ export function SwapCard() {
   }, [estimatedAmount, tokenOut?.decimals]);
 
   const { writeContractAsync } = useXWriteContract({
-    onSuccess: useCallback(() => {
+    onSuccess: () => {
       toast({
         title: "Swap successful",
         description: `Swapped ${amountIn} ${tokenIn.symbol} for ${amountOut} ${tokenOut.symbol}`,
@@ -110,18 +110,15 @@ export function SwapCard() {
       // Reset form
       setAmountIn("");
       setAmountOut("");
-    }, [amountIn, amountOut, toast, tokenIn, tokenOut]),
-    onError: useCallback(
-      (error) => {
-        toast({
-          title: "Swap failed",
-          description:
-            error.message || "Failed to execute swap. Please try again.",
-          variant: "destructive",
-        });
-      },
-      [toast]
-    ),
+    },
+    onError: (error) => {
+      toast({
+        title: "Swap failed",
+        description:
+          error.message || "Failed to execute swap. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Get network tokens

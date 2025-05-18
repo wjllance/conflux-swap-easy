@@ -139,11 +139,10 @@ const useXWriteContract = ({
         description: "Your transaction has been confirmed.",
       });
       handleSuccess?.(receipt as TransactionReceipt);
+
+      // TODO: reset all state
     }
   }, [isSuccess, receipt, handleSuccess]);
-
-  console.log("isSuccess", isSuccess);
-  console.log("isSubmitted", isSubmitted);
 
   return {
     hash,
