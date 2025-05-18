@@ -1,9 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { usePublicClient } from "wagmi";
-import { useEffect, useState } from "react";
-import { ROUTER_ADDRESSES, ROUTER_ABI } from "@/constants/contracts";
-import { useWallet } from "@/hooks/useWallet";
-import { formatEther } from "viem";
 import { CONFLUX_TOKENS } from "@/constants/tokens";
 import { useLpInfo } from "@/contexts/LpInfoContext";
 
@@ -38,83 +33,8 @@ const getTokenSymbol = (address: string): string => {
   return token ? token.symbol : "???";
 };
 
-const calculatePriceChange = (
-  currentPrice: string,
-  lastPrice: string
-): number => {
-  const current = parseFloat(currentPrice);
-  const last = parseFloat(lastPrice);
-  return current - last;
-};
-
 export function LpPriceCard() {
-  const { wallet } = useWallet();
-  const publicClient = usePublicClient();
-  const { lpInfos, updateLpInfo } = useLpInfo();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchLpInfo = async () => {
-      if (!wallet.chainId || !ROUTER_ADDRESSES[wallet.chainId]) return;
-
-      const routerAddress = ROUTER_ADDRESSES[wallet.chainId];
-
-      try {
-        for (const lpAddress of LP_ADDRESSES) {
-          // Get LP price
-          const price = await publicClient.readContract({
-            address: routerAddress as `0x${string}`,
-            abi: ROUTER_ABI,
-            functionName: "getLpPrice",
-            args: [lpAddress as `0x${string}`],
-          });
-
-          // Get LP pair tokens
-          const pairTokens = (await publicClient.readContract({
-            address: routerAddress as `0x${string}`,
-            abi: ROUTER_ABI,
-            functionName: "getLpPair",
-            args: [lpAddress as `0x${string}`],
-          })) as [`0x${string}`, `0x${string}`];
-
-          // Get LP reserves
-          const reserves = (await publicClient.readContract({
-            address: routerAddress as `0x${string}`,
-            abi: ROUTER_ABI,
-            functionName: "getLpReserve",
-            args: [lpAddress as `0x${string}`],
-          })) as [[bigint, bigint], [bigint, bigint], bigint];
-
-          const currentPrice = formatEther(price as bigint);
-          const lastPrice = lpInfos[lpAddress]?.price;
-          const priceChange = lastPrice
-            ? calculatePriceChange(currentPrice, lastPrice)
-            : 0;
-
-          if (!lastPrice || currentPrice !== lastPrice) {
-            updateLpInfo(lpAddress, {
-              price: currentPrice,
-              token0: pairTokens[0],
-              token1: pairTokens[1],
-              reserve0: formatEther(reserves[0][0]),
-              reserve1: formatEther(reserves[0][1]),
-              lastPrice: lastPrice,
-              priceChange,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching LP info:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLpInfo();
-    const interval = setInterval(fetchLpInfo, 10000); // Refresh every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [wallet.chainId, publicClient, lpInfos, updateLpInfo]);
+  const { lpInfos, loading } = useLpInfo();
 
   return (
     <Card className="w-full max-w-md mx-auto">
